@@ -1,0 +1,17 @@
+@startuml
+start
+:Open Add Customer Page;
+:Fill Form;
+:Submit Form;
+
+if (All fields filled?) then (Yes)
+  :Create Customer Object;
+  :Save to Database;
+  :Show Success Message;
+  :Redirect to Customers Page;
+else (No)
+  :Show Error Message;
+endif
+
+stop
+@enduml

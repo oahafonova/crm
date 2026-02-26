@@ -1,0 +1,53 @@
+@startuml
+left to right direction
+
+actor "Gast" as Guest
+actor "Sales User" as Sales
+actor "Admin" as Admin
+
+rectangle "CRM System" {
+
+  (Login) as UC1
+  (Register) as UC2
+  (Logout) as UC3
+
+  (View Customers) as UC4
+  (Add Customer) as UC5
+  (Edit Customer) as UC6
+  (Delete Customer) as UC7
+
+  (View Leads) as UC8
+  (Add Lead) as UC9
+  (Delete Lead) as UC10
+
+  (CSV Import) as UC11
+  (CSV Export) as UC12
+
+  (Manage Users) as UC13
+  (Validate Input) as UC14
+  (Check Credentials) as UC15
+}
+
+Guest --> UC1
+Guest --> UC2
+
+Sales --> UC4
+Sales --> UC5
+Sales --> UC6
+Sales --> UC7
+Sales --> UC8
+Sales --> UC9
+Sales --> UC10
+Sales --> UC11
+Sales --> UC12
+Sales --> UC3
+
+Admin --> UC13
+
+UC5 .> UC14 : <<include>>
+UC1 .> UC15 : <<include>>
+UC11 .> UC14 : <<include>>
+
+Admin --|> Sales
+
+@enduml
