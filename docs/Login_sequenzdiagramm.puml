@@ -1,0 +1,20 @@
+@startuml
+actor User
+participant Browser
+participant "Flask Login Route" as Controller
+participant User as UserModel
+database DB
+
+User -> Browser : Enter Credentials
+Browser -> Controller : POST /login
+
+Controller -> DB : SELECT * FROM User
+DB --> Controller : User Data
+
+alt Correct Password
+    Controller -> Controller : Create Session
+    Controller --> Browser : Redirect to Dashboard
+else Wrong Password
+    Controller --> Browser : Show Error
+end
+@enduml
