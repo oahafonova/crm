@@ -1,8 +1,60 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-from models import Customer, Lead
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from models import Customer, Lead, User
+from extensions import db
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this'
+app.secret_key = "your-secret-key"
+
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///crm.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+
+
+
+@app.route("/login", methods=["GET","POST"])
+
+def login():
+
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        user = User.query.filter_by(email=email).first()
+
+        if user and user.check_password(password):
+            session["user_id"] = user.id
+            flash("Login successful")
+            return redirect(url_for("index"))
+
+        flash("Invalid email or password")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+
+    session.pop("user_id", None)
+    flash("Logged out")
+
+    return redirect(url_for("login"))
+
+def login():
+
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        user = User.query.filter_by(email=email).first()
+
+        if user and user.check_password(password):
+            session["user_id"] = user.id
+            flash("Login erfolgreich")
+            return redirect(url_for("index"))
+
+        flash("Invalid email or password")
+
+    return render_template("login.html")
 
 def init_sample_data():
     Customer.add_customer('John Doe', 'john@example.com', 'Acme Corp', '555-0001', 'active')
