@@ -1,0 +1,24 @@
+@startuml
+|User|
+start
+:Open Login Page;
+:Enter Username & Password;
+:Submit;
+
+|System|
+:Query User from DB;
+
+if (User exists?) then (Yes)
+  :Check Password;
+  if (Password correct?) then (Yes)
+    :Create Session;
+    :Redirect to Dashboard;
+  else (No)
+    :Show Error;
+  endif
+else (No)
+  :Show Error;
+endif
+
+stop
+@enduml

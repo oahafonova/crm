@@ -1,0 +1,36 @@
+@startuml
+entity Customer {
+  +id : int <<PK>>
+  name : string
+  email : string
+  company : string
+  phone : string
+  status : string
+}
+
+entity Lead {
+  +id : int <<PK>>
+  name : string
+  email : string
+  company : string
+  value : float
+  source : string
+  status : string
+}
+
+entity User {
+  +id : int <<PK>>
+  username : string
+  password_hash : string
+}
+
+entity Contact {
+  +id : int <<PK>>
+  customer_id : int <<FK>>
+  contact_type : string
+  notes : text
+  date : date
+}
+
+Customer ||--o{ Contact
+@enduml

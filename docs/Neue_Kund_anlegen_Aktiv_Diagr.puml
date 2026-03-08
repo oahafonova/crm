@@ -1,0 +1,20 @@
+@startuml
+|Sales User|
+start
+:Open Add Customer Page;
+:Fill Form;
+:Submit Form;
+
+|System|
+:Validate Input;
+
+if (All fields valid?) then (Yes)
+  :Create Customer Object;
+  :Save to Database;
+  :Show Success Message;
+else (No)
+  :Show Error Message;
+endif
+
+stop
+@enduml
