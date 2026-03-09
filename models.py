@@ -1,3 +1,8 @@
+import sqlite3
+
+DB_NAME = "crm.db"
+
+
 class Customer:
     customers = []
     next_id = 1
@@ -13,14 +18,42 @@ class Customer:
 
     @classmethod
     def add_customer(cls, name, email, company, phone, status="prospect"):
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO customers (name, email, company, phone, status)
+            VALUES (?, ?, ?, ?, ?)
+        """, (name, email, company, phone, status))
+
+        conn.commit()
+        customer_id = cursor.lastrowid
+        conn.close()
+
         customer = cls(name, email, company, phone, status)
+        customer.id = customer_id
         cls.customers.append(customer)
         return customer
 
+    
     @classmethod
     def get_all_customers(cls):
-        return cls.customers
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
 
+        cursor.execute("SELECT id, name, email, company, phone, status FROM customers")
+        rows = cursor.fetchall()
+        conn.close()
+
+        customers = []
+        for row in rows:
+            customer = cls(row[1], row[2], row[3], row[4], row[5])
+            customer.id = row[0]
+            customers.append(customer)
+
+        return customers
+
+   
     @classmethod
     def get_customer_by_id(cls, customer_id):
         for customer in cls.customers:
@@ -37,16 +70,18 @@ class Customer:
             customer.company = company
             customer.phone = phone
             customer.status = status
-    # the update_customer method is defined as a class method
-    # it retrieves the customer by ID and updates its attributes
-    # the reason for using class method is to maintain consistency with other methods
-    # it allows direct access to the class-level customer list
+
 
     @classmethod
     def delete_customer(cls, customer_id):
-        customer = cls.get_customer_by_id(customer_id)
-        if customer:
-            cls.customers.remove(customer)
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM customers WHERE id = ?", (customer_id,))
+
+        conn.commit()
+        conn.close()
+
 
 class Lead:
     leads = []
@@ -84,3 +119,22 @@ class Lead:
         lead = cls.get_lead_by_id(lead_id)
         if lead:
             cls.leads.remove(lead)
+
+
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS customers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT,
+        company TEXT,
+        phone TEXT,
+        status TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()

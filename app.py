@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
-from models import Customer, Lead
+from models import Customer, Lead, init_db
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
+
+init_db()
 
 def init_sample_data():
     Customer.add_customer('John Doe', 'john@example.com', 'Acme Corp', '555-0001', 'active')
@@ -11,7 +13,7 @@ def init_sample_data():
     Lead.add_lead('Alice Brown', 'alice@example.com', 'StartUp Inc', 50000, 'Website')
     Lead.add_lead('Charlie Davis', 'charlie@example.com', 'Enterprise Ltd', 100000, 'Referral')
 
-init_sample_data()
+# init_sample_data() init_sample_data()
 
 @app.route('/')
 def index():
@@ -57,8 +59,14 @@ def edit_customer(customer_id):
         return redirect(url_for('customers'))
 
     if request.method == 'POST':
-        Customer.update_customer(customer_id, request.form.get('name'), request.form.get('email'), 
-                                request.form.get('company'), request.form.get('phone'), request.form.get('status'))
+        Customer.update_customer(
+            customer_id,
+            request.form.get('name'),
+            request.form.get('email'),
+            request.form.get('company'),
+            request.form.get('phone'),
+            request.form.get('status')
+        )
         flash('Customer updated successfully!', 'success')
         return redirect(url_for('customer_detail', customer_id=customer_id))
 
