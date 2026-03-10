@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Login{% endblock %}
+{% block title %}Register{% endblock %}
 
 {% block content %}
 
 <div class="container" style="max-width:400px; margin-top:60px;">
 
-<h2 style="margin-bottom:20px;">Login</h2>
+<h2 style="margin-bottom:20px;">Register</h2>
 
 <form method="POST">
 
@@ -20,13 +20,13 @@
 <input type="password" id="password" name="password" required>
 </div>
 
-<button type="submit" class="btn btn-primary">Login</button>
+<button type="submit" class="btn btn-primary">Register</button>
 
 </form>
 
 <p style="margin-top:20px;">
-Noch kein Konto?
-<a href="{{ url_for('register') }}">Registrieren</a>
+Schon registriert?
+<a href="{{ url_for('login') }}">Login</a>
 </p>
 
 </div>
