@@ -2,22 +2,20 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# ----------------------
 # Flask App Konfiguration
-# ----------------------
+
 app = Flask(__name__)
 app.secret_key = "geheim"  # Für Sessions
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///crm.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# ----------------------
 # SQLAlchemy initialisieren
-# ----------------------
+
 db = SQLAlchemy(app)
 
-# ----------------------
+
 # Datenbank-Modelle
-# ----------------------
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -39,9 +37,9 @@ class Lead(db.Model):
     value = db.Column(db.Float, nullable=False)
     source = db.Column(db.String(120), nullable=False)
 
-# ----------------------
+
 # Datenbank erstellen
-# ----------------------
+
 def init_sample_data():
     if not Customer.query.first():
         db.session.add(Customer(name='John Doe', email='john@example.com', company='Acme Corp', phone='555-0001', status='active'))
@@ -57,17 +55,14 @@ with app.app_context():
     init_sample_data()
     
 
-# ----------------------
 # Authentifizierung (User)
-# ----------------------
+
 @app.route("/register", methods=["GET","POST"])
 def register():
     if request.method == "POST":
-        # --- Hier ---
         username = request.form.get("username")
         password = request.form.get("password")
-        # --- Ende ---
-        
+                
         if User.query.filter_by(username=username).first():
             flash("Benutzer existiert bereits!", "error")
             return redirect(url_for("register"))
@@ -81,11 +76,9 @@ def register():
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "POST":
-        # --- Hier ---
         username = request.form.get("username")
         password = request.form.get("password")
-        # --- Ende ---
-        
+                
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             session["user_id"] = user.id
@@ -99,12 +92,10 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
-    flash("Logout erfolgreich", "success")
+    flash("Du wurdest ausgeloggt.", "success")
     return redirect(url_for("login"))
 
-# ----------------------
-# Index
-# ----------------------
+# ----------------------Index------------------------------------
 @app.route("/")
 def index():
     if "user_id" not in session:
@@ -113,7 +104,7 @@ def index():
     total_leads = Lead.query.count()
     return render_template("index.html", total_customers=total_customers, total_leads=total_leads)
 
-# ---------------------- Customers ----------------------
+# -------------- Customers ----------------------
 @app.route("/customers")
 def customers():
     if "user_id" not in session:
@@ -222,9 +213,9 @@ def delete_lead(lead_id):
 
     flash("Lead deleted", "success")
     return redirect(url_for("leads"))
-# ----------------------
+
 # Fehlerseiten
-# ----------------------
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template("404.html"), 404
@@ -233,8 +224,8 @@ def page_not_found(e):
 def internal_error(e):
     return render_template("500.html"), 500
 
-# ----------------------
+
 # App starten
-# ----------------------
+
 if __name__ == "__main__":
     app.run(debug=True, host="127.0.0.1", port=5000)
