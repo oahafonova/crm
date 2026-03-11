@@ -17,7 +17,7 @@ body {
 }
 
 .navbar {
-    background: linear-gradient(to right, #1e40af, #3b82f6, #60a5fa);
+    background: linear-gradient(to right, #7c3aed, #a78bfa, #c4b5fd);
     padding: 1rem 0;
     border-bottom: 1px solid #e5e7eb;
 }
@@ -55,18 +55,19 @@ body {
 }
 
 .btn-primary {
-    background: #3b82f6;
+    background: #a78bfa;
     color: white;
 }
 
 .btn-primary:hover {
-    background: #2563eb;
+    background: #7c3aed;
 }
 
 .btn-danger {
-    background: #ef4444;
+    background:#8b5cf6;
     color: white;
 }
+
 
 .btn-sm {
     padding: 4px 8px;

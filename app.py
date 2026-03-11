@@ -100,10 +100,32 @@ def logout():
 def index():
     if "user_id" not in session:
         return redirect(url_for("login"))
+
     total_customers = Customer.query.count()
     total_leads = Lead.query.count()
-    return render_template("index.html", total_customers=total_customers, total_leads=total_leads)
 
+    leads = Lead.query.all()
+    total_value = sum(l.value for l in leads)
+
+    # Customer Status Statistik
+    customers = Customer.query.all()
+    status_counts = {}
+    for c in customers:
+        status_counts[c.status] = status_counts.get(c.status, 0) + 1
+
+    # Lead Source Statistik
+    source_counts = {}
+    for l in leads:
+        source_counts[l.source] = source_counts.get(l.source, 0) + 1
+
+    return render_template(
+        "index.html",
+        total_customers=total_customers,
+        total_leads=total_leads,
+        total_value=total_value,
+        status_counts=status_counts,
+        source_counts=source_counts
+    )
 # -------------- Customers ----------------------
 @app.route("/customers")
 def customers():
