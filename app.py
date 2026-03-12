@@ -122,7 +122,6 @@ def index():
         "index.html",
         total_customers=total_customers,
         total_leads=total_leads,
-        total_value=total_value,
         status_counts=status_counts,
         source_counts=source_counts
     )
