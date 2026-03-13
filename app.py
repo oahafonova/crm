@@ -244,103 +244,347 @@ def delete_lead(lead_id):
 
     flash("Lead gelöscht", "success")
     return redirect(url_for("leads"))
-# ---------------------- API Routes ----------------------
-# -------- Customers API --------
-@app.route("/api/customers", methods=["GET"])
-@swag_from({
-    'responses': {200: {'description': 'List of customers'}}
-})
-def api_get_customers():
-    customers = Customer.query.all()
-    return jsonify([{
-        "id": c.id, "name": c.name, "email": c.email, "company": c.company,
-        "phone": c.phone, "status": c.status
-    } for c in customers])
 
-@app.route("/api/customers/<int:customer_id>", methods=["GET"])
-def api_get_customer(customer_id):
-    c = Customer.query.get_or_404(customer_id)
-    return jsonify({
-        "id": c.id, "name": c.name, "email": c.email, "company": c.company,
-        "phone": c.phone, "status": c.status
-    })
+# ---------------------- API Routes ----------------------
+
+@app.route("/api/customers", methods=["GET"])
+def api_get_customers():
+    """
+    Get all customers
+    ---
+    tags:
+      - Customers
+    responses:
+      200:
+        description: Liste aller Kunden
+        schema:
+          type: array
+          items:
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              email:
+                type: string
+              company:
+                type: string
+              phone:
+                type: string
+              status:
+                type: string
+    """
+
+    customers = Customer.query.all()
+
+    result = []
+
+    for c in customers:
+        result.append({
+            "id": c.id,
+            "name": c.name,
+            "email": c.email,
+            "company": c.company,
+            "phone": c.phone,
+            "status": c.status
+        })
+
+    return jsonify(result)
 
 @app.route("/api/customers", methods=["POST"])
 def api_create_customer():
-    data = request.json
-    customer = Customer(
-        name=data["name"], email=data["email"], company=data["company"],
-        phone=data["phone"], status=data.get("status", "prospect")
-    )
-    db.session.add(customer)
-    db.session.commit()
-    return jsonify({"message": "Customer created", "id": customer.id}), 201
+    """
+    Create new customer
+    ---
+    tags:
+      - Customers
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            company:
+              type: string
+            phone:
+              type: string
+            status:
+              type: string
+    responses:
+      201:
+        description: Customer created
+    """
 
-@app.route("/api/customers/<int:customer_id>", methods=["PUT"])
-def api_update_customer(customer_id):
-    c = Customer.query.get_or_404(customer_id)
     data = request.json
+
+    c = Customer(
+        name=data["name"],
+        email=data["email"],
+        company=data["company"],
+        phone=data["phone"],
+        status=data.get("status","prospect")
+    )
+
+    db.session.add(c)
+    db.session.commit()
+
+    return jsonify({"message":"customer created"}), 201
+
+@app.route("/api/customers/<int:id>", methods=["GET"])
+def api_get_customer(id):
+    """
+    Get customer by ID
+    ---
+    tags:
+      - Customers
+    parameters:
+      - name: id
+        in: path
+        type: integer
+        required: true
+        description: Customer ID
+    responses:
+      200:
+        description: Customer found
+    """
+
+    c = Customer.query.get_or_404(id)
+
+    return jsonify({
+        "id": c.id,
+        "name": c.name,
+        "email": c.email,
+        "company": c.company,
+        "phone": c.phone,
+        "status": c.status
+    })
+@app.route("/api/customers/<int:id>", methods=["PUT"])
+def api_update_customer(id):
+    """
+    Update customer
+    ---
+    tags:
+      - Customers
+    parameters:
+      - name: id
+        in: path
+        type: integer
+        required: true
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            company:
+              type: string
+            phone:
+              type: string
+            status:
+              type: string
+    responses:
+      200:
+        description: Customer updated
+    """
+
+    c = Customer.query.get_or_404(id)
+    data = request.json
+
     c.name = data.get("name", c.name)
     c.email = data.get("email", c.email)
     c.company = data.get("company", c.company)
     c.phone = data.get("phone", c.phone)
     c.status = data.get("status", c.status)
-    db.session.commit()
-    return jsonify({"message": "Customer updated"})
 
-@app.route("/api/customers/<int:customer_id>", methods=["DELETE"])
-def api_delete_customer(customer_id):
-    c = Customer.query.get_or_404(customer_id)
+    db.session.commit()
+
+    return jsonify({"message": "customer updated"})
+
+@app.route("/api/customers/<int:id>", methods=["DELETE"])
+def api_delete_customer(id):
+    """
+    Delete customer
+    ---
+    tags:
+      - Customers
+    parameters:
+      - name: id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Customer deleted
+    """
+
+    c = Customer.query.get_or_404(id)
+
     db.session.delete(c)
     db.session.commit()
-    return jsonify({"message": "Customer deleted"})
 
-# -------- Leads API --------
+    return jsonify({"message": "customer deleted"})
+
+# -------- LEADS API --------
+
 @app.route("/api/leads", methods=["GET"])
 def api_get_leads():
-    leads = Lead.query.all()
-    return jsonify([{
-        "id": l.id, "name": l.name, "email": l.email, "company": l.company,
-        "value": l.value, "source": l.source
-    } for l in leads])
+    """
+    Get all leads
+    ---
+    tags:
+      - Leads
+    responses:
+      200:
+        description: Liste aller Leads
+    """
 
-@app.route("/api/leads/<int:lead_id>", methods=["GET"])
-def api_get_lead(lead_id):
-    l = Lead.query.get_or_404(lead_id)
+    leads = Lead.query.all()
+
+    result = []
+
+    for l in leads:
+        result.append({
+            "id": l.id,
+            "name": l.name,
+            "email": l.email,
+            "company": l.company,
+            "value": l.value,
+            "source": l.source
+        })
+
+    return jsonify(result)
+
+
+@app.route("/api/leads/<int:id>", methods=["GET"])
+def api_get_lead(id):
+
+    l = Lead.query.get_or_404(id)
+
     return jsonify({
-        "id": l.id, "name": l.name, "email": l.email, "company": l.company,
-        "value": l.value, "source": l.source
+        "id":l.id,
+        "name":l.name,
+        "email":l.email,
+        "company":l.company,
+        "value":l.value,
+        "source":l.source
     })
 
 @app.route("/api/leads", methods=["POST"])
 def api_create_lead():
-    data = request.json
-    lead = Lead(
-        name=data["name"], email=data["email"], company=data["company"],
-        value=data["value"], source=data["source"]
-    )
-    db.session.add(lead)
-    db.session.commit()
-    return jsonify({"message": "Lead created", "id": lead.id}), 201
+    """
+    Create new lead
+    ---
+    tags:
+      - Leads
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            company:
+              type: string
+            value:
+              type: number
+            source:
+              type: string
+    responses:
+      201:
+        description: Lead created
+    """
 
-@app.route("/api/leads/<int:lead_id>", methods=["PUT"])
-def api_update_lead(lead_id):
-    l = Lead.query.get_or_404(lead_id)
     data = request.json
+
+    l = Lead(
+        name=data["name"],
+        email=data["email"],
+        company=data["company"],
+        value=data["value"],
+        source=data["source"]
+    )
+
+    db.session.add(l)
+    db.session.commit()
+
+    return jsonify({"message": "lead created"}), 201
+@app.route("/api/leads/<int:id>", methods=["PUT"])
+def api_update_lead(id):
+    """
+    Update lead
+    ---
+    tags:
+      - Leads
+    parameters:
+      - name: id
+        in: path
+        type: integer
+        required: true
+      - in: body
+        name: body
+        schema:
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            company:
+              type: string
+            value:
+              type: number
+            source:
+              type: string
+    responses:
+      200:
+        description: Lead updated
+    """
+
+    l = Lead.query.get_or_404(id)
+    data = request.json
+
     l.name = data.get("name", l.name)
     l.email = data.get("email", l.email)
     l.company = data.get("company", l.company)
     l.value = data.get("value", l.value)
     l.source = data.get("source", l.source)
-    db.session.commit()
-    return jsonify({"message": "Lead updated"})
 
-@app.route("/api/leads/<int:lead_id>", methods=["DELETE"])
-def api_delete_lead(lead_id):
-    l = Lead.query.get_or_404(lead_id)
+    db.session.commit()
+
+    return jsonify({"message": "lead updated"})
+
+@app.route("/api/leads/<int:id>", methods=["DELETE"])
+def api_delete_lead_api(id):
+    """
+    Delete lead
+    ---
+    tags:
+      - Leads
+    parameters:
+      - name: id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Lead deleted
+    """
+
+    l = Lead.query.get_or_404(id)
+
     db.session.delete(l)
     db.session.commit()
-    return jsonify({"message": "Lead deleted"})
+
+    return jsonify({"message": "lead deleted"})
 
 # ---------------------- Fehlerseiten ----------------------
 @app.errorhandler(404)
@@ -352,5 +596,6 @@ def internal_error(e):
     return render_template("500.html"), 500
 
 # ---------------------- App starten ----------------------
+
 if __name__ == "__main__":
     app.run(debug=True, host="127.0.0.1", port=5000)
