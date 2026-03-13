@@ -1,21 +1,21 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from flasgger import Swagger, swag_from
 
-# Flask App Konfiguration
-
+# ---------------------- App Konfiguration ----------------------
 app = Flask(__name__)
-app.secret_key = "geheim"  # Für Sessions
+app.secret_key = "geheim"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///crm.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# SQLAlchemy initialisieren
-
+# SQLAlchemy
 db = SQLAlchemy(app)
 
+# Swagger
+swagger = Swagger(app)
 
-# Datenbank-Modelle
-
+# ---------------------- Datenbankmodelle ----------------------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -37,9 +37,7 @@ class Lead(db.Model):
     value = db.Column(db.Float, nullable=False)
     source = db.Column(db.String(120), nullable=False)
 
-
-# Datenbank erstellen
-
+# ---------------------- Sample Data ----------------------
 def init_sample_data():
     if not Customer.query.first():
         db.session.add(Customer(name='John Doe', email='john@example.com', company='Acme Corp', phone='555-0001', status='active'))
@@ -49,20 +47,16 @@ def init_sample_data():
         db.session.add(Lead(name='Charlie Davis', email='charlie@example.com', company='Enterprise Ltd', value=100000, source='Referral'))
         db.session.commit()
 
-
 with app.app_context():
     db.create_all()
     init_sample_data()
-    
 
-# Authentifizierung (User)
-
+# ---------------------- Auth Routes ----------------------
 @app.route("/register", methods=["GET","POST"])
 def register():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-                
         if User.query.filter_by(username=username).first():
             flash("Benutzer existiert bereits!", "error")
             return redirect(url_for("register"))
@@ -78,7 +72,6 @@ def login():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-                
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             session["user_id"] = user.id
@@ -95,29 +88,22 @@ def logout():
     flash("Du wurdest ausgeloggt.", "success")
     return redirect(url_for("login"))
 
-# ----------------------Index------------------------------------
+# ---------------------- Index ----------------------
 @app.route("/")
 def index():
     if "user_id" not in session:
         return redirect(url_for("login"))
-
     total_customers = Customer.query.count()
     total_leads = Lead.query.count()
-
     leads = Lead.query.all()
     total_value = sum(l.value for l in leads)
-
-    # Customer Status Statistik
     customers = Customer.query.all()
     status_counts = {}
     for c in customers:
         status_counts[c.status] = status_counts.get(c.status, 0) + 1
-
-    # Lead Source Statistik
     source_counts = {}
     for l in leads:
         source_counts[l.source] = source_counts.get(l.source, 0) + 1
-
     return render_template(
         "index.html",
         total_customers=total_customers,
@@ -125,26 +111,31 @@ def index():
         status_counts=status_counts,
         source_counts=source_counts
     )
-# -------------- Customers ----------------------
+# ---------------------- Customers (HTML CRM) ----------------------
 @app.route("/customers")
 def customers():
     if "user_id" not in session:
         return redirect(url_for("login"))
+
     all_customers = Customer.query.all()
     return render_template("customers.html", customers=all_customers)
+
 
 @app.route("/customers/<int:customer_id>")
 def customer_detail(customer_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
+
     customer = Customer.query.get_or_404(customer_id)
     return render_template("customer_detail.html", customer=customer)
+
 
 @app.route("/customers/add", methods=["GET","POST"])
 def add_customer():
     if "user_id" not in session:
         return redirect(url_for("login"))
-    if request.method=="POST":
+
+    if request.method == "POST":
         customer = Customer(
             name=request.form.get("name"),
             email=request.form.get("email"),
@@ -152,11 +143,15 @@ def add_customer():
             phone=request.form.get("phone"),
             status=request.form.get("status","prospect")
         )
+
         db.session.add(customer)
         db.session.commit()
-        flash(f"Customer {customer.name} hinzugefügt!", "success")
+
+        flash("Customer hinzugefügt!", "success")
         return redirect(url_for("customers"))
+
     return render_template("add_customer.html")
+
 
 @app.route("/customers/<int:customer_id>/edit", methods=["GET","POST"])
 def edit_customer(customer_id):
@@ -173,6 +168,7 @@ def edit_customer(customer_id):
         customer.status = request.form.get("status")
 
         db.session.commit()
+
         flash("Customer updated", "success")
         return redirect(url_for("customers"))
 
@@ -184,32 +180,40 @@ def delete_customer(customer_id):
         return redirect(url_for("login"))
 
     customer = Customer.query.get_or_404(customer_id)
+
     db.session.delete(customer)
     db.session.commit()
 
-    flash("Customer deleted", "success")
+    flash("Customer gelöscht", "success")
     return redirect(url_for("customers"))
 
-# ---------------------- Leads ----------------------
+# ---------------------- Leads (HTML CRM) ----------------------
+
 @app.route("/leads")
 def leads():
     if "user_id" not in session:
         return redirect(url_for("login"))
+
     all_leads = Lead.query.all()
     return render_template("leads.html", leads=all_leads)
+
 
 @app.route("/leads/<int:lead_id>")
 def lead_detail(lead_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
+
     lead = Lead.query.get_or_404(lead_id)
     return render_template("lead_detail.html", lead=lead)
+
 
 @app.route("/leads/add", methods=["GET","POST"])
 def add_lead():
     if "user_id" not in session:
         return redirect(url_for("login"))
-    if request.method=="POST":
+
+    if request.method == "POST":
+
         lead = Lead(
             name=request.form.get("name"),
             email=request.form.get("email"),
@@ -217,26 +221,128 @@ def add_lead():
             value=float(request.form.get("value")),
             source=request.form.get("source")
         )
+
         db.session.add(lead)
         db.session.commit()
-        flash(f"Lead {lead.name} hinzugefügt!", "success")
+
+        flash("Lead hinzugefügt!", "success")
         return redirect(url_for("leads"))
+
     return render_template("add_lead.html")
+
 
 @app.route("/leads/<int:lead_id>/delete", methods=["POST"])
 def delete_lead(lead_id):
+
     if "user_id" not in session:
         return redirect(url_for("login"))
 
     lead = Lead.query.get_or_404(lead_id)
+
     db.session.delete(lead)
     db.session.commit()
 
-    flash("Lead deleted", "success")
+    flash("Lead gelöscht", "success")
     return redirect(url_for("leads"))
+# ---------------------- API Routes ----------------------
+# -------- Customers API --------
+@app.route("/api/customers", methods=["GET"])
+@swag_from({
+    'responses': {200: {'description': 'List of customers'}}
+})
+def api_get_customers():
+    customers = Customer.query.all()
+    return jsonify([{
+        "id": c.id, "name": c.name, "email": c.email, "company": c.company,
+        "phone": c.phone, "status": c.status
+    } for c in customers])
 
-# Fehlerseiten
+@app.route("/api/customers/<int:customer_id>", methods=["GET"])
+def api_get_customer(customer_id):
+    c = Customer.query.get_or_404(customer_id)
+    return jsonify({
+        "id": c.id, "name": c.name, "email": c.email, "company": c.company,
+        "phone": c.phone, "status": c.status
+    })
 
+@app.route("/api/customers", methods=["POST"])
+def api_create_customer():
+    data = request.json
+    customer = Customer(
+        name=data["name"], email=data["email"], company=data["company"],
+        phone=data["phone"], status=data.get("status", "prospect")
+    )
+    db.session.add(customer)
+    db.session.commit()
+    return jsonify({"message": "Customer created", "id": customer.id}), 201
+
+@app.route("/api/customers/<int:customer_id>", methods=["PUT"])
+def api_update_customer(customer_id):
+    c = Customer.query.get_or_404(customer_id)
+    data = request.json
+    c.name = data.get("name", c.name)
+    c.email = data.get("email", c.email)
+    c.company = data.get("company", c.company)
+    c.phone = data.get("phone", c.phone)
+    c.status = data.get("status", c.status)
+    db.session.commit()
+    return jsonify({"message": "Customer updated"})
+
+@app.route("/api/customers/<int:customer_id>", methods=["DELETE"])
+def api_delete_customer(customer_id):
+    c = Customer.query.get_or_404(customer_id)
+    db.session.delete(c)
+    db.session.commit()
+    return jsonify({"message": "Customer deleted"})
+
+# -------- Leads API --------
+@app.route("/api/leads", methods=["GET"])
+def api_get_leads():
+    leads = Lead.query.all()
+    return jsonify([{
+        "id": l.id, "name": l.name, "email": l.email, "company": l.company,
+        "value": l.value, "source": l.source
+    } for l in leads])
+
+@app.route("/api/leads/<int:lead_id>", methods=["GET"])
+def api_get_lead(lead_id):
+    l = Lead.query.get_or_404(lead_id)
+    return jsonify({
+        "id": l.id, "name": l.name, "email": l.email, "company": l.company,
+        "value": l.value, "source": l.source
+    })
+
+@app.route("/api/leads", methods=["POST"])
+def api_create_lead():
+    data = request.json
+    lead = Lead(
+        name=data["name"], email=data["email"], company=data["company"],
+        value=data["value"], source=data["source"]
+    )
+    db.session.add(lead)
+    db.session.commit()
+    return jsonify({"message": "Lead created", "id": lead.id}), 201
+
+@app.route("/api/leads/<int:lead_id>", methods=["PUT"])
+def api_update_lead(lead_id):
+    l = Lead.query.get_or_404(lead_id)
+    data = request.json
+    l.name = data.get("name", l.name)
+    l.email = data.get("email", l.email)
+    l.company = data.get("company", l.company)
+    l.value = data.get("value", l.value)
+    l.source = data.get("source", l.source)
+    db.session.commit()
+    return jsonify({"message": "Lead updated"})
+
+@app.route("/api/leads/<int:lead_id>", methods=["DELETE"])
+def api_delete_lead(lead_id):
+    l = Lead.query.get_or_404(lead_id)
+    db.session.delete(l)
+    db.session.commit()
+    return jsonify({"message": "Lead deleted"})
+
+# ---------------------- Fehlerseiten ----------------------
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template("404.html"), 404
@@ -245,8 +351,6 @@ def page_not_found(e):
 def internal_error(e):
     return render_template("500.html"), 500
 
-
-# App starten
-
+# ---------------------- App starten ----------------------
 if __name__ == "__main__":
     app.run(debug=True, host="127.0.0.1", port=5000)
