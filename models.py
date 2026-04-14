@@ -37,11 +37,7 @@ class Customer:
             customer.company = company
             customer.phone = phone
             customer.status = status
-    # the update_customer method is defined as a class method
-    # it retrieves the customer by ID and updates its attributes
-    # the reason for using class method is to maintain consistency with other methods
-    # it allows direct access to the class-level customer list
-
+   
     @classmethod
     def delete_customer(cls, customer_id):
         customer = cls.get_customer_by_id(customer_id)
